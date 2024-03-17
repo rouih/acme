@@ -17,49 +17,62 @@ const CreateInvoice = FormSchema.omit({ id: true, date: true });
 const UpdateInvoice = FormSchema.omit({ id: true, date: true });
 
 export async function updateInvoice(id: string, formData: FormData) {
-    const { customerId, amount, status } = UpdateInvoice.parse({
-        customerId: formData.get('customerId'),
-        amount: formData.get('amount'),
-        status: formData.get('status'),
-    });
+    try {
+        const { customerId, amount, status } = UpdateInvoice.parse({
+            customerId: formData.get('customerId'),
+            amount: formData.get('amount'),
+            status: formData.get('status'),
+        });
 
-    const amountInCents = amount * 100;
+        const amountInCents = amount * 100;
 
-    await sql`
-    UPDATE invoices
-    SET customer_id = ${customerId}, amount = ${amountInCents}, status = ${status}
-    WHERE id = ${id}
-  `;
-
+        await sql`
+      UPDATE invoices
+      SET customer_id = ${customerId}, amount = ${amountInCents}, status = ${status}
+      WHERE id = ${id}
+    `;
+    } catch (error) {
+        return { message: 'DB error: Failed to update invoice' }
+    }
     revalidatePath('/dashboard/invoices');
     redirect('/dashboard/invoices');
 }
 
 export async function deleteInvoice(id: string) {
-    await sql`DELETE FROM invoices WHERE id= ${id}`;
-    revalidatePath('/dashboard/invoices');
+    throw new Error('shit!');
+    try {
+        await sql`DELETE FROM invoices WHERE id= ${id}`;
+        revalidatePath('/dashboard/invoices');
+    } catch (error) {
+        return { message: 'DB error: Failed to delete invoice' }
+    }
 }
 
 export async function createInvoice(formData: FormData) {
-    // Parse the form data using the CreateInvoice schema to ensure it matches the expected structure
-    // and to extract the customerId, amount, and status fields
-    const { customerId, amount, status } = CreateInvoice.parse({
-        customerId: formData.get('customerId'),
-        amount: formData.get('amount'),
-        status: formData.get('status')
-    });
+    try {
+        // Parse the form data using the CreateInvoice schema to ensure it matches the expected structure
+        // and to extract the customerId, amount, and status fields
+        const { customerId, amount, status } = CreateInvoice.parse({
+            customerId: formData.get('customerId'),
+            amount: formData.get('amount'),
+            status: formData.get('status')
+        });
 
-    const amountInCets = amount * 100;
+        const amountInCets = amount * 100;
 
-    // Get the current date in ISO format and extract only the date part (YYYY-MM-DD)
-    const date = new Date().toISOString().split('T')[0];
+        // Get the current date in ISO format and extract only the date part (YYYY-MM-DD)
+        const date = new Date().toISOString().split('T')[0];
 
 
-    await sql`
-    INSERT INTO invoices (customer_id, amount, status, date)
-    VALUES (${customerId}, ${amountInCets}, ${status}, ${date})`;
+        await sql`
+        INSERT INTO invoices (customer_id, amount, status, date)
+        VALUES (${customerId}, ${amountInCets}, ${status}, ${date})`;
 
-    // Revalidate the path to ensure the dashboard/invoices page is up-to-date with the latest data (bcuz we updated the DB)
+        // Revalidate the path to ensure the dashboard/invoices page is up-to-date with the latest data (bcuz we updated the DB)
+
+    } catch (error) {
+        return { message: 'DB error: Failed to create invoice' }
+    }
     revalidatePath('/dashboard/invoices');
     redirect('/dashboard/invoices');
 }
